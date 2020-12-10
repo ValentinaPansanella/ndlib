@@ -7,6 +7,7 @@ __license__ = "GPL"
 __email__ = "giulio.rossetti@gmail.com"
 
 from .AlgorithmicBiasModel import AlgorithmicBiasModel
+from .AlgorithmicBiasMediaModel import AlgorithmicBiasMediaModel
 from .CognitiveOpDynModel import CognitiveOpDynModel
 from .MajorityRuleModel import MajorityRuleModel
 from .QVoterModel import QVoterModel
