@@ -1,10 +1,13 @@
 import abc
+import sys
 import warnings
 import numpy as np
 import past.builtins
 import future.utils
 import six
-from netdispatch import AGraph
+path = '../../../' + 'local_packages'
+sys.path.append(path)
+from netdispatch_local.netdispatch.AGraph import AGraph
 import tqdm
 
 __author__ = "Giulio Rossetti"

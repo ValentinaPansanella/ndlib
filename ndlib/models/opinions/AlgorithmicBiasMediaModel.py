@@ -102,7 +102,7 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
                 i_sts = nids[:, 1][i_neigh]
                 self.node_data[i] = (i_ids, i_sts)
 
-        self.stsmedia = np.random.rand((self.params['model']['k']))
+        self.stsmedia = np.random.rand(self.params['model']['k'])
 
 
     @staticmethod
@@ -126,16 +126,6 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
         return dists
 
     def iteration(self, node_status=True):
-        """
-        Execute a single model iteration
-
-        :return: Iteration_id, Incremental node status (dictionary node->status)
-        """
-        # One iteration changes the opinion of N agent pairs using the following procedure:
-        # - first one agent is selected
-        # - then a second agent is selected based on a probability that decreases with the distance to the first agent
-        # - if the two agents have a distance smaller than epsilon, then they change their status to the average of
-        # their previous statuses
 
         actual_status = self.status.copy()
 
@@ -154,8 +144,41 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
         # interact with peers
         for n1 in range(0, n):
 
-            if random.random() < self.params['model'[]['p']:
+            if len(self.node_data) == 0:
+                sts = self.sts
+                ids = self.ids
+                neigh_sts = np.delete(sts, n1)
+                neigh_ids = np.delete(ids, n1)
+            else:
+                neigh_ids = self.node_data[n1][0]
+                neigh_sts = np.array([actual_status[id] for id in neigh_ids])
 
+            # selection_prob = self.pb1(sts, self.status[n1])
+            selection_prob = self.pb1(neigh_sts, actual_status[n1])
+
+            # compute probabilities to select a second node among the neighbours
+            total = np.sum(selection_prob)
+            selection_prob = selection_prob / total
+            cumulative_selection_probability = np.cumsum(selection_prob)
+
+            r = np.random.random_sample()
+            n2 = np.argmax(
+                cumulative_selection_probability >= r)  
+            n2 = int(neigh_ids[n2])
+
+            # update status of n1 and n2
+            diff = np.abs(actual_status[n1] - actual_status[n2])
+
+            if diff < self.params['model']['epsilon']:
+                avg = (actual_status[n1] + actual_status[n2]) / 2.0
+                actual_status[n1] = avg
+                actual_status[n2] = avg
+
+                if len(self.node_data) == 0:
+                    self.sts[n1] = avg
+                    self.sts[n2] = avg
+
+            if random.random() < self.params['model']['p']:
                 selection_prob = self.pb2(self.stsmedia, actual_status[n1])
                 total = np.sum(selection_prob)
                 selection_prob = selection_prob / total
@@ -163,51 +186,12 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
                 r = np.random.random_sample()
                 media = np.argmax(
                     cumulative_selection_probability >= r)  
-                # update status of n1 and n2
-
                 diff = np.abs(actual_status[n1] - self.stsmedia[media])
-                
                 if diff < self.params['model']['epsilon']:
                     avg = (actual_status[n1] + self.stsmedia[media]) / 2.0
                     actual_status[n1] = avg
                     if len(self.node_data) == 0:
                         self.sts[n1] = avg
-                    
-            else:
-
-                if len(self.node_data) == 0:
-                    sts = self.sts
-                    ids = self.ids
-                    neigh_sts = np.delete(sts, n1)
-                    neigh_ids = np.delete(ids, n1)
-                else:
-                    neigh_ids = self.node_data[n1][0]
-                    neigh_sts = np.array([actual_status[id] for id in neigh_ids])
-
-                # selection_prob = self.pb1(sts, self.status[n1])
-                selection_prob = self.pb1(neigh_sts, actual_status[n1])
-
-                # compute probabilities to select a second node among the neighbours
-                total = np.sum(selection_prob)
-                selection_prob = selection_prob / total
-                cumulative_selection_probability = np.cumsum(selection_prob)
-
-                r = np.random.random_sample()
-                n2 = np.argmax(
-                    cumulative_selection_probability >= r)  
-                n2 = int(neigh_ids[n2])
-
-                # update status of n1 and n2
-                diff = np.abs(actual_status[n1] - actual_status[n2])
-
-                if diff < self.params['model']['epsilon']:
-                    avg = (actual_status[n1] + actual_status[n2]) / 2.0
-                    actual_status[n1] = avg
-                    actual_status[n2] = avg
-
-                    if len(self.node_data) == 0:
-                        self.sts[n1] = avg
-                        self.sts[n2] = avg
 
         delta = actual_status
         node_count = {}
@@ -223,8 +207,42 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
             return {"iteration": self.actual_iteration - 1, "status": {},
                     "node_count": node_count.copy(), "status_delta": status_delta.copy()}
 
-    def steady_state(self, max_iterations=100000, nsteady=1000, sensibility=0.00001, node_status=True,
-                     progress_bar=False):
+    def steady_state(self, max_iterations=1000000, nsteady=1000, sensibility=0.00001, node_status=True, progress_bar=False):
+
+        def clustering_naive(ops, thereshold=0.001):
+            i = 0
+            d = dict()
+            for el in ops:
+                d[i] = el
+                i += 1
+            sorted_ops = sorted(d.items(), key = lambda kv:(kv[1], kv[0]))
+            labels = [0 for i in range(len(ops))]
+            for i in range(len(sorted_ops)-1):
+                dist = abs(sorted_ops[i][1]-sorted_ops[i+1][1])
+                if dist < thereshold:
+                    labels[sorted_ops[i+1][0]] = labels[sorted_ops[i][0]]
+                else:
+                    labels[sorted_ops[i+1][0]] = labels[sorted_ops[i][0]]+1
+            return labels
+
+        def compute_n_clusters(ops):   
+            labels = clustering_naive(ops)
+            cluster_participation_dict = {}
+            for l in labels:
+                if l not in cluster_participation_dict:
+                    cluster_participation_dict[l] = 1
+                else:
+                    cluster_participation_dict[l] += 1
+            #computing effective number of clusters using function explained in the paper
+            C_num = 0
+            C_den = 0
+            for k in cluster_participation_dict:
+                C_num += cluster_participation_dict[k]
+                C_den += ((cluster_participation_dict[k])**2)
+            C_num = (C_num**2)
+            C = C_num/C_den
+            return C
+        
         system_status = []
         steady_it = 0
         for it in tqdm.tqdm(range(0, max_iterations), disable=not progress_bar):
@@ -238,6 +256,14 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
                     steady_it += 1
                 else:
                     steady_it = 0
+
+                if (it%10000)==0:
+
+                    ops = list(its['status'].values())
+            
+                    n_cluster = compute_n_clusters(ops)
+
+                    print('After ' +str(it)+ ' iterations {:.2f} clusters were formed and there were {} steady iterations'.format(n_cluster, steady_it))
 
             system_status.append(its)
             if steady_it == nsteady:
