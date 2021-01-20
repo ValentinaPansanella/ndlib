@@ -15,6 +15,7 @@ from .SznajdModel import SznajdModel
 from .VoterModel import VoterModel
 
 __all__ = [
+    'AlgorithmicBiasMediaModel'
     'AlgorithmicBiasModel',
     'CognitiveOpDynModel',
     'MajorityRuleModel',

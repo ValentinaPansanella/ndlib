@@ -1,4 +1,4 @@
-from ndlib.models.DiffusionModel import DiffusionModel
+from ndlib_local.ndlib.models.DiffusionModel import DiffusionModel
 import numpy as np
 import future.utils
 from collections import defaultdict

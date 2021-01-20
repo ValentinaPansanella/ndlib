@@ -1,10 +1,10 @@
 from ndlib_local.ndlib.models.DiffusionModel import DiffusionModel
 import numpy as np
-from random import choice
-import future.utils
-from collections import defaultdict
 import tqdm
 import random
+import os
+import time
+import pickle
 
 class AlgorithmicBiasMediaModel(DiffusionModel):
     """
@@ -103,6 +103,14 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
                 self.node_data[i] = (i_ids, i_sts)
 
         self.stsmedia = np.random.rand(self.params['model']['k'])
+        self.steady = 0
+        self.currentit = 0
+
+    def set_media_opinions(self, opinions_list):
+        if len(opinions_list) != self.params['model']['k']:
+            print('list must be of length {}'.format(self.params['model']['k']))
+            return
+        self.stsmedia = np.array(opinions_list)
 
 
     @staticmethod
@@ -207,66 +215,33 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
             return {"iteration": self.actual_iteration - 1, "status": {},
                     "node_count": node_count.copy(), "status_delta": status_delta.copy()}
 
-    def steady_state(self, max_iterations=1000000, nsteady=1000, sensibility=0.00001, node_status=True, progress_bar=False):
+    def steady_state(self, max_iterations=10000000, nsteady=1000, sensibility=0.00001, node_status=True, progress_bar=False, save_status=False):     
 
-        def clustering_naive(ops, thereshold=0.001):
-            i = 0
-            d = dict()
-            for el in ops:
-                d[i] = el
-                i += 1
-            sorted_ops = sorted(d.items(), key = lambda kv:(kv[1], kv[0]))
-            labels = [0 for i in range(len(ops))]
-            for i in range(len(sorted_ops)-1):
-                dist = abs(sorted_ops[i][1]-sorted_ops[i+1][1])
-                if dist < thereshold:
-                    labels[sorted_ops[i+1][0]] = labels[sorted_ops[i][0]]
-                else:
-                    labels[sorted_ops[i+1][0]] = labels[sorted_ops[i][0]]+1
-            return labels
-
-        def compute_n_clusters(ops):   
-            labels = clustering_naive(ops)
-            cluster_participation_dict = {}
-            for l in labels:
-                if l not in cluster_participation_dict:
-                    cluster_participation_dict[l] = 1
-                else:
-                    cluster_participation_dict[l] += 1
-            #computing effective number of clusters using function explained in the paper
-            C_num = 0
-            C_den = 0
-            for k in cluster_participation_dict:
-                C_num += cluster_participation_dict[k]
-                C_den += ((cluster_participation_dict[k])**2)
-            C_num = (C_num**2)
-            C = C_num/C_den
-            return C
+        start = time.time()
         
         system_status = []
-        steady_it = 0
-        for it in tqdm.tqdm(range(0, max_iterations), disable=not progress_bar):
-            its = self.iteration(node_status)
+        steady = 0
 
+        for it in tqdm.tqdm(range(0, max_iterations), disable=not progress_bar):
+
+            its = self.iteration(node_status)
+            
             if it > 0:
                 old = np.array(list(system_status[-1]['status'].values()))
                 actual = np.array(list(its['status'].values()))
                 res = np.abs(old - actual)
                 if np.all((res < sensibility)):
-                    steady_it += 1
+                    steady += 1
                 else:
-                    steady_it = 0
-
-                if (it%10000)==0:
-
-                    ops = list(its['status'].values())
-            
-                    n_cluster = compute_n_clusters(ops)
-
-                    print('After ' +str(it)+ ' iterations {:.2f} clusters were formed and there were {} steady iterations'.format(n_cluster, steady_it))
+                    steady = 0
 
             system_status.append(its)
-            if steady_it == nsteady:
+
+            if steady == nsteady:
+                
                 return system_status[:-nsteady]
+
+        end = time.time()
+        
 
         return system_status
