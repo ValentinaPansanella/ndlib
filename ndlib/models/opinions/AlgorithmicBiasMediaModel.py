@@ -217,6 +217,8 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
 
     def steady_state(self, max_iterations=10000000, nsteady=1000, sensibility=0.00001, node_status=True, progress_bar=False, save_status=False):     
 
+        print('starting process')
+
         start = time.time()
         
         system_status = []
@@ -234,6 +236,7 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
                     steady += 1
                 else:
                     steady = 0
+                    system_status = []
 
             system_status.append(its)
 
