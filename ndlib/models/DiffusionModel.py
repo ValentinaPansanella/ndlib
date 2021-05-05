@@ -1,10 +1,11 @@
 import abc
+import sys
 import warnings
 import numpy as np
 import past.builtins
 import future.utils
 import six
-from netdispatch import AGraph
+from netdispatch.AGraph import AGraph
 import tqdm
 
 __author__ = "Giulio Rossetti"

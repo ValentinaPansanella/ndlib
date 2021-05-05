@@ -6,6 +6,7 @@ __author__ = 'rossetti'
 __license__ = "GPL"
 __email__ = "giulio.rossetti@gmail.com"
 
+from .AlgorithmicBiasMediaModel import AlgorithmicBiasMediaModel
 from .AlgorithmicBiasModel import AlgorithmicBiasModel
 from .CognitiveOpDynModel import CognitiveOpDynModel
 from .MajorityRuleModel import MajorityRuleModel
@@ -18,6 +19,7 @@ from .HKModel import HKModel
 
 
 __all__ = [
+    'AlgorithmicBiasMediaModel'
     'AlgorithmicBiasModel',
     'CognitiveOpDynModel',
     'MajorityRuleModel',
