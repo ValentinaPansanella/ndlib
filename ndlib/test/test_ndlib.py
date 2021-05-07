@@ -25,7 +25,7 @@ def get_graph(er=False):
     gi = ig.Graph(directed=False)
     gi.add_vertices(list(g.nodes()))
     gi.add_edges(list(g.edges()))
-    gs = [g, gi]
+    gs = [gi, g]
     return gs
 
 
@@ -140,7 +140,7 @@ class NdlibTest(unittest.TestCase):
             iterations = model.iteration_bunch(10, node_status=False)
             self.assertEqual(len(iterations), 10)
 
-            _ = model.steady_state(max_iterations=10000)
+            _ = model.steady_state(max_iterations=100)
 
     def test_voter_model(self):
         for g in get_graph():
@@ -212,6 +212,72 @@ class NdlibTest(unittest.TestCase):
             config.add_model_parameter("R_fraction_positive", 1.0 / 3)
             model.set_initial_status(config)
 
+            iterations = model.iteration_bunch(10)
+            self.assertEqual(len(iterations), 10)
+            iterations = model.iteration_bunch(10, node_status=False)
+            self.assertEqual(len(iterations), 10)
+
+    def test_whk_model(self):
+        for g in get_graph():
+            model = opn.WHKModel(g)
+            config = mc.Configuration()
+            config.add_model_parameter("epsilon", 0.32)
+            weight = 0.2
+            if isinstance(g, nx.Graph):
+                edges = g.edges
+            else:
+                edges = [(g.vs[e.tuple[0]]['name'], g.vs[e.tuple[1]]['name']) for e in g.es]
+
+            for e in edges:
+                config.add_edge_configuration("weight", e, weight)
+
+            model.set_initial_status(config)
+            iterations = model.iteration_bunch(3)
+            self.assertEqual(len(iterations), 3)
+
+    def test_hk_model(self):
+        for g in get_graph():
+            model = opn.HKModel(g)
+            config = mc.Configuration()
+            config.add_model_parameter("epsilon", 0.32)
+
+            model.set_initial_status(config)
+
+            iterations = model.iteration_bunch(10)
+            self.assertEqual(len(iterations), 10)
+            iterations = model.iteration_bunch(10, node_status=False)
+            self.assertEqual(len(iterations), 10)
+
+    def test_arwhk_model(self):
+        for g in get_graph():
+            model = opn.ARWHKModel(g)
+            config = mc.Configuration()
+            config.add_model_parameter("epsilon", 0.32)
+            config.add_model_parameter("perc_stubborness", 0.2)
+            config.add_model_parameter("option_for_stubbornness", 1)
+            config.add_model_parameter("similarity", 1)
+            config.add_model_parameter("method_variant", 3)
+
+            weight = 0.2
+            if isinstance(g, nx.Graph):
+                edges = g.edges
+                nodes = g.nodes
+            else:
+                edges = [(g.vs[e.tuple[0]]['name'], g.vs[e.tuple[1]]['name']) for e in g.es]
+                nodes = g.vs['name']
+
+            for e in edges:
+                config.add_edge_configuration("weight", e, weight)
+
+            for node in nodes:
+                i = 0
+                vector = []
+                while i < 6:
+                    vector.append(np.random.randint(2))
+                    i += 1
+                config.add_node_configuration("vector", node, vector)
+
+            model.set_initial_status(config)
             iterations = model.iteration_bunch(10)
             self.assertEqual(len(iterations), 10)
             iterations = model.iteration_bunch(10, node_status=False)
@@ -409,8 +475,6 @@ class NdlibTest(unittest.TestCase):
             for i in nodes:
                 config.add_node_configuration("threshold", i, threshold)
 
-               
-
             model.set_initial_status(config)
             iterations = model.iteration_bunch(10)
             self.assertEqual(len(iterations), 10)
@@ -439,7 +503,6 @@ class NdlibTest(unittest.TestCase):
             iterations = model.iteration_bunch(50, node_status=False)
             self.assertEqual(len(iterations), 50)
 
-
     def test_GeneralThresholdModel(self):
         for g in get_graph(True):
             model = epd.GeneralThresholdModel(g)
@@ -455,19 +518,16 @@ class NdlibTest(unittest.TestCase):
                 nodes = g.vs['name']
                 edges = [(g.vs[e.tuple[0]]['name'], g.vs[e.tuple[1]]['name']) for e in g.es]
 
-
             for i in nodes:
                 config.add_node_configuration("threshold", i, threshold)
             for e in edges:
                 config.add_edge_configuration("weight", e, weight)
-
 
             model.set_initial_status(config)
             iterations = model.iteration_bunch(10)
             self.assertEqual(len(iterations), 10)
             iterations = model.iteration_bunch(10, node_status=False)
             self.assertEqual(len(iterations), 10)
-
 
     def test_profile_threshold_model(self):
         for g in get_graph(True):
@@ -576,7 +636,7 @@ class NdlibTest(unittest.TestCase):
             config = mc.Configuration()
             config.add_model_parameter('percentage_infected', 0.1)
             if isinstance(g, nx.Graph):
-                node_to_com = {n: random.choice([0, 1])for n in g.nodes()}
+                node_to_com = {n: random.choice([0, 1]) for n in g.nodes()}
                 for i in g.nodes():
                     config.add_node_configuration("com", i, node_to_com[i])
             else:
@@ -599,7 +659,7 @@ class NdlibTest(unittest.TestCase):
             config = mc.Configuration()
             config.add_model_parameter('percentage_infected', 0.1)
             if isinstance(g, nx.Graph):
-                node_to_com = {n: random.choice([0, 1])for n in g.nodes()}
+                node_to_com = {n: random.choice([0, 1]) for n in g.nodes()}
                 for i in g.nodes():
                     config.add_node_configuration("com", i, node_to_com[i])
                 for e in g.edges:
@@ -620,23 +680,20 @@ class NdlibTest(unittest.TestCase):
             iterations = model.iteration_bunch(10, node_status=False)
             self.assertEqual(len(iterations), 10)
 
-
     def test_ICEP(self):
-
 
         for g in get_graph(True):
             model = epd.ICEPModel(g)
             config = mc.Configuration()
             config.add_model_parameter('percentage_infected', 0.1)
             if isinstance(g, nx.Graph):
-                node_to_com = {n: random.choice([0, 1])for n in g.nodes()}
+                node_to_com = {n: random.choice([0, 1]) for n in g.nodes()}
                 for i in g.nodes():
                     config.add_node_configuration("com", i, node_to_com[i])
             else:
                 node_to_com = {n: random.choice([0, 1]) for n in g.vs['name']}
                 for i in g.vs['name']:
                     config.add_node_configuration("com", i, node_to_com[i])
-
 
             config.add_model_parameter('permeability', 0.1)
 

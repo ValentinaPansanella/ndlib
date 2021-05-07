@@ -5,9 +5,7 @@ import numpy as np
 import past.builtins
 import future.utils
 import six
-path = '../../../' + 'local_packages'
-sys.path.append(path)
-from netdispatch_local.netdispatch.AGraph import AGraph
+from netdispatch.AGraph import AGraph
 import tqdm
 
 __author__ = "Giulio Rossetti"
