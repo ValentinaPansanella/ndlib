@@ -8,6 +8,7 @@ __email__ = "giulio.rossetti@gmail.com"
 
 from .AlgorithmicBiasMediaModel import AlgorithmicBiasMediaModel
 from .AlgorithmicBiasModel import AlgorithmicBiasModel
+from .AlgorithmicBiasMediaModel import AlgorithmicBiasMediaModel
 from .CognitiveOpDynModel import CognitiveOpDynModel
 from .MajorityRuleModel import MajorityRuleModel
 from .QVoterModel import QVoterModel

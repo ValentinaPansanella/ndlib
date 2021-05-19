@@ -215,6 +215,7 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
             return {"iteration": self.actual_iteration - 1, "status": {},
                     "node_count": node_count.copy(), "status_delta": status_delta.copy()}
 
+
     def steady_state(self, max_iterations=10000000, nsteady=1000, sensibility=0.00001, node_status=True, progress_bar=False, drop_evolution=True):     
 
         start = time.time()

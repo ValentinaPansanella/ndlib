@@ -1,4 +1,4 @@
-from ndlib.models.DiffusionModel import DiffusionModel
+from ndlib_local.ndlib.models.DiffusionModel import DiffusionModel
 import numpy as np
 from random import choice
 import future.utils
@@ -58,17 +58,24 @@ class AlgorithmicBiasModel(DiffusionModel):
         self.ids = None
         self.sts = None
 
-    def set_initial_status(self, configuration=None):
+    def set_initial_status(self, initialstatus=None, configuration=None):
+
         """
         Override behaviour of methods in class DiffusionModel.
         Overwrites initial status using random real values.
         """
         super(AlgorithmicBiasModel, self).set_initial_status(configuration)
 
-        # set node status
-        for node in self.status:
-            self.status[node] = np.random.random_sample()
-        self.initial_status = self.status.copy()
+        #todo: controllare che initial status sia una lista e abbia len = N
+        if initialstatus != None:
+            for node in self.status:
+                self.status[node] = initialstatus[node]
+            self.initial_status = self.status.copy()
+        else:
+            # set node status
+            for node in self.status:
+                self.status[node] = np.random.random_sample()
+            self.initial_status = self.status.copy()
 
         ### Initialization numpy representation
 

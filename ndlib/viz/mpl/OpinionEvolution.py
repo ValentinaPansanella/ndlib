@@ -5,7 +5,7 @@ if os.environ.get('DISPLAY', '') == '':
     mpl.use('Agg')
 import matplotlib.pyplot as plt
 import future.utils
-
+import seaborn as sns
 
 __author__ = 'Giulio Rossetti'
 __license__ = "BSD-2-Clause"
@@ -24,18 +24,58 @@ class OpinionEvolution(object):
         self.ylabel = "Opinion"
 
     def plot(self, filename=None):
+
+        def clustering_naive(ops, thereshold=0.001):
+            i = 0
+            d = dict()
+            for el in ops:
+                d[i] = el
+                i += 1
+            sorted_ops = sorted(d.items(), key = lambda kv:(kv[1], kv[0]))
+            labels = [0 for i in range(len(ops))]
+            for i in range(len(sorted_ops)-1):
+                dist = abs(sorted_ops[i][1]-sorted_ops[i+1][1])
+                if dist < thereshold:
+                    labels[sorted_ops[i+1][0]] = labels[sorted_ops[i][0]]
+                else:
+                    labels[sorted_ops[i+1][0]] = labels[sorted_ops[i][0]]+1
+            return labels
+
+        def avg_nclusters(ops):   
+            labels = clustering_naive(ops)
+            cluster_participation_dict = {}
+            for l in labels:
+                if l not in cluster_participation_dict:
+                    cluster_participation_dict[l] = 1
+                else:
+                    cluster_participation_dict[l] += 1
+            #computing effective number of clusters using function explained in the paper
+            C_num = 0
+            C_den = 0
+            for k in cluster_participation_dict:
+                C_num += cluster_participation_dict[k]
+                C_den += ((cluster_participation_dict[k])**2)
+            C_num = (C_num**2)
+            C = C_num/C_den
+            return C
+
         """
         Generates the plot
 
         :param filename: Output filename
         :param percentile: The percentile for the trend variance area
         """
+        ops = list(self.srev[len(self.srev)-1]['status'].values())
+        nclusters = avg_nclusters(ops)
 
         descr = ""
         infos = self.model.get_info()
+        infos = infos.items()
+        infos = list(infos)[:2]
 
-        for k, v in future.utils.iteritems(infos):
-            descr += "%s: %s, " % (k, v)
+
+        for t in infos:
+            descr += "%s: %s, " % (t[0], t[1])
         descr = descr[:-2].replace("_", " ")
 
         nodes2opinions = {}
@@ -67,6 +107,9 @@ class OpinionEvolution(object):
                         node2col[n] = '#00ff00'
                     else:
                         node2col[n] = '#0000ff'
+        
+        sns.set_style("whitegrid")
+        plt.figure(figsize=(30,18))
 
         mx = 0
         for k, l in future.utils.iteritems(nodes2opinions):
@@ -76,14 +119,16 @@ class OpinionEvolution(object):
             y = l[0:last_seen[k]]
             plt.plot(x, y, lw=1, alpha=0.5, color=node2col[k])
 
-        plt.title(descr)
-        plt.xlabel("Iterations", fontsize=24)
-        plt.ylabel(self.ylabel, fontsize=24)
-        plt.legend(loc="best", fontsize=18)
-
+        descr = descr + ', nc: {:.5f}'.format(nclusters)
+        plt.title(descr, fontsize=40)
+        plt.xlabel("Iterations", fontsize=40)
+        plt.ylabel(self.ylabel, fontsize=40)
+        plt.legend(loc="best", fontsize=30)
+        plt.tick_params(axis='both', which='major', labelsize=40, pad=8)                
+        
         plt.tight_layout()
         if filename is not None:
-            plt.savefig(filename)
+            plt.savefig(filename, papertype = 'a4', bbox_inches='tight')
             plt.clf()
         else:
             plt.show()
