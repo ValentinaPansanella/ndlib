@@ -220,7 +220,7 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
         start = time.time()
         
         system_status = []
-        steady = 0
+        steady_it = 0
 
         for it in tqdm.tqdm(range(0, max_iterations), disable=not progress_bar):
 
@@ -231,19 +231,21 @@ class AlgorithmicBiasMediaModel(DiffusionModel):
                 actual = np.array(list(its['status'].values()))
                 res = np.abs(old - actual)
                 if np.all((res < sensibility)):
-                    steady += 1
+                    steady_it += 1
                 else:
-                    steady = 0
+                    steady_it = 0
 
                 if drop_evolution:    
                     system_status = []
 
             system_status.append(its)
 
-            if steady == nsteady:
-                return system_status
+            if steady_it == nsteady:
+                if drop_evolution:
+                    return system_status
+                else:
+                    return system_status[:-nsteady]
 
         end = time.time()
         
-
         return system_status
